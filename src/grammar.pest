@@ -1,0 +1,53 @@
+Input = _{ SOI ~ expr ~ EOI }
+expr = _{ BinExpr | invocation | LetBind }
+BinExpr = !{ invocation ~ (binary_op ~ invocation)+ }
+
+atomic = _{ "(" ~ expr ~ ")" }
+primary = _{ literal | atomic | CondExpr | Identifier | parameter }
+invocation = _{ primary+ }
+parameter = _{ "$" ~ ParameterIndex }
+ParameterIndex = ${ "0" | '1' .. '9' ~ ASCII_DIGIT* }
+
+binary_op = _{ Add | Sub | Mul | Div | Mod | Eq | Ne | Gt | Lt | Ge | Le }
+Add = { "+" }
+Sub = { "-" }
+Mul = { "*" }
+Div = { "/" }
+Mod = { "%" }
+Eq = { "==" }
+Ne = { "!=" }
+Gt = { ">" }
+Lt = { "<" }
+Ge = { ">=" }
+Le = { "<=" }
+
+CondExpr = { IfPhrase ~ ElifPhrase* ~ ElsePhrase? ~ "end" }
+	IfPhrase = { "if" ~ expr ~ "then" ~ expr }
+    ElifPhrase = { "elif" ~ expr ~ "then" ~ expr }
+    ElsePhrase = { "else" ~ expr }
+
+Function = { "fn" ~ (Arguments ~ "->")? ~ expr ~ "end" }
+	Arguments = { Identifier+ }
+	
+non_function_literal = _{ Integer | Float }
+
+literal = _{ Function | non_function_literal }
+
+Integer = @{ sign? ~ (integer_hex | integer_oct | integer_bin | integer_dec) }
+	integer_dec = { ASCII_DIGIT ~ (ASCII_DIGIT | "_" )* }
+    integer_hex = { "0x" ~ ASCII_HEX_DIGIT ~ (ASCII_HEX_DIGIT | "_")* }
+    integer_oct = { "0o" ~ ASCII_OCT_DIGIT ~ (ASCII_OCT_DIGIT | "_")* }
+    integer_bin = { "0b" ~ ASCII_BIN_DIGIT ~ (ASCII_BIN_DIGIT | "_")* }
+    	sign = { "-" | "+" }
+
+Float = @{ integer_dec ~ "." ~ integer_dec ~ exponent | integer_dec ~ "." ~ integer_dec? | integer_dec ~ exponent }
+    exponent = { ("e" | "E") ~ sign? ~ "_"* ~ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* }
+
+keyword = { "if" | "elif" | "end" | "else" | "fn" | "then" | "let" | "in" }
+
+Identifier = @{ !keyword ~ (ASCII_ALPHA ~ ASCII_ALPHANUMERIC*) }
+
+LetBind = { "let" ~ Identifier ~ "=" ~ expr ~ "in" ~ expr }
+
+ws = { WHITESPACE+ }
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
