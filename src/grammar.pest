@@ -1,10 +1,11 @@
 Input = _{ SOI ~ expr ~ EOI }
-expr = _{ BinExpr | invocation | LetBind }
-BinExpr = !{ invocation ~ (binary_op ~ invocation)+ }
+expr = _{ BinExpr | Invocation | LetBind | primary }
+BinExpr = !{ bin_expr_primary ~ (binary_op ~ bin_expr_primary)+ }
+	bin_expr_primary = _{ Invocation | primary }
 
 atomic = _{ "(" ~ expr ~ ")" }
 primary = _{ literal | atomic | CondExpr | Identifier | parameter }
-invocation = _{ primary+ }
+Invocation = { primary{2,} }
 parameter = _{ "$" ~ ParameterIndex }
 ParameterIndex = ${ "0" | '1' .. '9' ~ ASCII_DIGIT* }
 

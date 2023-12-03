@@ -1,9 +1,11 @@
-#![feature(fn_traits, map_try_insert)]
+#![feature(fn_traits, map_try_insert, trait_upcasting)]
 
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
-use std::collections::HashMap;
 use std::rc::Rc;
+
+use expr::Expr;
+use scope::Scope;
 
 
 #[derive(Debug, PartialEq, Eq)]
@@ -39,14 +41,12 @@ trait Value: Expr + Display {
     // fn as_string(&self) -> Option<String>;
 }
 
-trait Expr: Debug {
-    fn evaluate(&self) -> Result<Rc<dyn Value>, ()>;
-}
 
 mod value;
 mod expr;
 mod bin_op;
 mod parser;
+mod scope;
 
 // enum FunctionIndex {
 //     Name(String)
@@ -68,31 +68,6 @@ struct Variable {
     scope: Rc<RefCell<Scope>>,
 }
 
-#[derive(Debug)]
-struct Scope {
-    // functions: HashMap<FunctionIndex>
-    variables: HashMap<VariableIndex, Rc<dyn Value>>,
-    parent: Option<Rc<RefCell<Scope>>>,
-}
-
-impl Scope {
-    fn new() -> Self {
-        Scope {
-            variables: HashMap::new(),
-            parent: None,
-        }
-    }
-}
-
-impl Scope {
-    fn find(&self, idx: &VariableIndex) -> Option<Rc<dyn Value>> {
-        self.variables.get(idx).map_or(
-            self.parent.as_ref().map_or(None, |parent| parent.borrow().find(idx)),
-            |res| Some(res.clone())
-        )
-    }
-}
-
 impl Expr for Variable {
     fn evaluate(&self) -> Result<Rc<dyn Value>, ()> {
         self.scope.borrow().find(&self.index).map_or(Err(()), |res| Ok(res))
@@ -100,6 +75,6 @@ impl Expr for Variable {
 }
 
 fn main() {
-    // parser::parse_expr();
+    parser::parse();
 }
 

@@ -1,4 +1,6 @@
-use crate::{Expr, Value, Type};
+use crate::{expr::Expr, Value, Type};
+
+pub type BinaryOp = fn(&dyn Expr, &dyn Expr) -> Result<Box<dyn Value>, ()>;
 
 pub fn add(lhs: &dyn Expr, rhs: &dyn Expr) -> Result<Box<dyn Value>, ()> {
     let value1 = lhs.evaluate()?;
