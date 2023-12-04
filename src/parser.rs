@@ -9,8 +9,7 @@ use pest::Parser;
 use lazy_static::lazy_static;
 
 use crate::scope::Scope;
-use crate::{Expr, Variable, VariableIndex};
-use crate::expr::{LetBinding, BinaryExpr};
+use crate::expr::{LetBinding, BinaryExpr, Expr, Variable, VariableIndex, CondExpr};
 use crate::bin_op::{self, BinaryOp};
 
 #[derive(Parser)]
@@ -77,7 +76,7 @@ impl AstParser {
     fn parse_let_bind(&mut self, pairs: &mut Pairs<Rule>) -> LetBinding {
         self.context.make_inner_scope();
         LetBinding {
-            name: pairs.next().unwrap().as_str().to_string(),
+            identifier: pairs.next().unwrap().as_str().to_string(),
             bind_expr: self.parse_expr(pairs.next().unwrap()),
             in_expr: self.parse_expr(pairs.next().unwrap()),
             scope: self.context.scope.clone(),
@@ -116,10 +115,17 @@ impl AstParser {
             .parse(pair.into_inner())
     }
 
+    fn parse_cond_expr(&mut self, pairs: Pairs<Rule>) -> CondExpr {
+        CondExpr {
+            inner: pairs.map(|pair| self.parse_expr(pair)).collect()
+        }
+    }
+
     pub fn parse_expr(&mut self, pair: Pair<Rule>) -> Rc<dyn Expr> {
         match pair.as_rule() {
             Rule::LetBind => Rc::new(self.parse_let_bind(&mut pair.into_inner())),
             Rule::BinExpr => self.parse_binary_expr(pair),
+            Rule::CondExpr => Rc::new(self.parse_cond_expr(pair.into_inner())),
             Rule::Invocation => unimplemented!(),
             _ => self.parse_primary(pair),
         }
@@ -131,7 +137,7 @@ pub fn parse() {
     let p = PairParser::parse(Rule::Input, "
         let a = 1 in
         let b = 2 in
-        (a + a + a + a + b) / 2
+        if a > b then a else a + b * 2 end
     ").into_iter().next().unwrap().next().unwrap();
     let expr = parser.parse_expr(p);
     println!("{:?}", expr.evaluate());

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, cell::RefCell, rc::Rc};
 
-use crate::{VariableIndex, Value};
+use crate::{expr::VariableIndex, Value};
+
 
 #[derive(Debug)]
 pub struct Scope {

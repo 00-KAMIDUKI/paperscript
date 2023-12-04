@@ -22,10 +22,10 @@ Lt = { "<" }
 Ge = { ">=" }
 Le = { "<=" }
 
-CondExpr = { IfPhrase ~ ElifPhrase* ~ ElsePhrase? ~ "end" }
-	IfPhrase = { "if" ~ expr ~ "then" ~ expr }
-    ElifPhrase = { "elif" ~ expr ~ "then" ~ expr }
-    ElsePhrase = { "else" ~ expr }
+CondExpr = { if_phrase ~ elif_phrase* ~ else_phrase? ~ "end" }
+	if_phrase = _{ "if" ~ expr ~ "then" ~ expr }
+    elif_phrase = _{ "elif" ~ expr ~ "then" ~ expr }
+    else_phrase = _{ "else" ~ expr }
 
 Function = { "fn" ~ (Arguments ~ "->")? ~ expr ~ "end" }
 	Arguments = { Identifier+ }
@@ -52,3 +52,4 @@ LetBind = { "let" ~ Identifier ~ "=" ~ expr ~ "in" ~ expr }
 
 ws = { WHITESPACE+ }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+

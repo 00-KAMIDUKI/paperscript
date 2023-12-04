@@ -1,13 +1,21 @@
-use crate::Type;
+use crate::{Type, expr::VariableIndex};
 
-enum Error {
+pub enum Error {
     ParseError(),
     RuntimeError(RuntimeError)
 }
 
-enum RuntimeError {
+#[derive(Debug)]
+pub enum RuntimeError {
     TypeError {
-        expected: Type,
+        expected: Vec<Type>,
         current: Type,
     },
+    MultiDefined {
+        identifier: String,
+    },
+    Undefined {
+        index: VariableIndex,
+    }
 }
+

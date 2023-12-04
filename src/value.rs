@@ -1,8 +1,9 @@
-use crate::{Value, Type, Expr};
 use std::rc::Rc;
 
+use crate::{Value, Type, Expr, error::RuntimeError};
+
 impl<T: Value + Copy + 'static> Expr for T {
-    fn evaluate(&self) -> Result<Rc<dyn Value>, ()> {
+    fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
         Ok(Rc::new(self.clone()))
     }
 }

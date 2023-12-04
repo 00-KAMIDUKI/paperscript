@@ -1,11 +1,12 @@
 use std::{rc::Rc, cell::RefCell};
 use std::fmt::Debug;
 
-use crate::{Value, Scope, VariableIndex};
+use crate::error::RuntimeError;
+use crate::{Value, Scope, Type};
 use crate::bin_op::BinaryOp;
 
 pub trait Expr: Debug {
-    fn evaluate(&self) -> Result<Rc<dyn Value>, ()>;
+    fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError>;
 }
 
 #[derive(Debug)]
@@ -16,26 +17,26 @@ pub struct BinaryExpr {
 }
 
 impl Expr for BinaryExpr {
-    fn evaluate(&self) -> Result<Rc<dyn Value>, ()> {
+    fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
         self.op.call((self.lhs.as_ref(), self.rhs.as_ref())).map(Rc::from)
     }
 }
 
 #[derive(Debug)]
 pub struct CondExpr {
-    inner: Vec<Rc<dyn Expr>>,
+    pub inner: Vec<Rc<dyn Expr>>,
 }
 
 impl Expr for CondExpr {
-    fn evaluate(&self) -> Result<Rc<dyn Value>, ()> {
+    fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
         self.inner.chunks(2)
             .take(self.inner.len() / 2)
             .map(|slice| (&slice[0], &slice[1]))
             .map(|(cond, expr)| (cond.evaluate(), expr))
             .find_map(|(cond, expr)| match cond {
                 Ok(cond) => match cond.as_bool() {
-                    Some(cond) => if cond { Some(expr.evaluate()) } else { None },
-                    None => Some(Err(())),
+                    Some(value) => if value { Some(expr.evaluate()) } else { None },
+                    None => Some(Err(RuntimeError::TypeError { current: cond.type_().clone(), expected: vec![Type::Bool] })),
                 },
                 Err(err) => Some(Err(err)),
             })
@@ -45,26 +46,42 @@ impl Expr for CondExpr {
 
 #[derive(Debug)]
 pub struct LetBinding {
-    pub name: String,
+    pub identifier: String,
     pub scope: Rc<RefCell<Scope>>,
     pub bind_expr: Rc<dyn Expr>,
     pub in_expr: Rc<dyn Expr>,
 }
 
 impl Expr for LetBinding {
-    fn evaluate(&self) -> Result<Rc<dyn Value>, ()> {
+    fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
         let res = self.scope.borrow_mut().insert_variable(VariableIndex{
-            name: self.name.clone(),
+            name: self.identifier.clone(),
         }, self.bind_expr.evaluate()?);
-        // let new_scope = Scope::from_parent(self.scope.clone());
-        // *self.scope.borrow_mut() = new_scope;
-        // self.scope.replace(Scope::from_parent(self.scope.clone()));
         match res {
             true => self.in_expr.evaluate(),
-            false => Err(()),
+            false => Err(RuntimeError::MultiDefined { identifier: self.identifier.clone() }),
         }
     }
 }
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+pub struct VariableIndex {
+    pub name: String,
+}
+
+#[derive(Debug)]
+pub struct Variable {
+    pub index: VariableIndex,
+    pub scope: Rc<RefCell<Scope>>,
+}
+
+impl Expr for Variable {
+    fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
+        let res = self.scope.borrow().find(&self.index);
+        res.map_or(Err(RuntimeError::Undefined { index: self.index.clone() }), |res| Ok(res))
+    }
+}
+
 
 #[test]
 fn test_binary_expression() {
@@ -79,13 +96,13 @@ fn test_binary_expression() {
 fn test_let_binding() {
     let scope = Rc::new(RefCell::new(Scope::new()));
     let bind1 = LetBinding {
-        name: "a".to_string(),
+        identifier: "a".to_string(),
         scope: scope.clone(),
         bind_expr: Rc::new(1),
         in_expr: Rc::new(BinaryExpr {
             lhs: Rc::new(1),
             op: crate::bin_op::add,
-            rhs: Rc::new(crate::Variable { scope: scope.clone(), index: VariableIndex { name: "a".to_string() } })
+            rhs: Rc::new(Variable { scope: scope.clone(), index: VariableIndex { name: "a".to_string() } })
         }),
     };
     assert_eq!(bind1.evaluate().unwrap().as_i64().unwrap(), 2)
