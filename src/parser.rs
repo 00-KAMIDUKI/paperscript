@@ -9,7 +9,7 @@ use pest::Parser;
 use lazy_static::lazy_static;
 
 use crate::scope::Scope;
-use crate::Expr;
+use crate::{Expr, Variable, VariableIndex};
 use crate::expr::{LetBinding, BinaryExpr};
 use crate::bin_op::{self, BinaryOp};
 
@@ -77,7 +77,7 @@ impl AstParser {
     fn parse_let_bind(&mut self, pairs: &mut Pairs<Rule>) -> LetBinding {
         self.context.make_inner_scope();
         LetBinding {
-            name: pairs.next().unwrap().to_string(),
+            name: pairs.next().unwrap().as_str().to_string(),
             bind_expr: self.parse_expr(pairs.next().unwrap()),
             in_expr: self.parse_expr(pairs.next().unwrap()),
             scope: self.context.scope.clone(),
@@ -91,7 +91,11 @@ impl AstParser {
     fn parse_primary(&mut self, pair: Pair<Rule>) -> Rc<dyn Expr> {
         match pair.as_rule() {
             Rule::Integer => Rc::new(pair.as_str().parse::<i64>().unwrap()),
-            Rule::Identifier => self.context.scope.borrow().find(&crate::VariableIndex{ name: pair.as_str().to_string() }).unwrap(),
+            Rule::Identifier => Rc::new(Variable {
+                index: VariableIndex { name: pair.as_str().to_string() },
+                scope: self.context.scope.clone(),
+            }),
+            Rule::BinExpr | Rule::LetBind | Rule::Invocation => self.parse_expr(pair),
             _ => unimplemented!(),
         }
     }
@@ -127,7 +131,7 @@ pub fn parse() {
     let p = PairParser::parse(Rule::Input, "
         let a = 1 in
         let b = 2 in
-        a + b
+        (a + a + a + a + b) / 2
     ").into_iter().next().unwrap().next().unwrap();
     let expr = parser.parse_expr(p);
     println!("{:?}", expr.evaluate());

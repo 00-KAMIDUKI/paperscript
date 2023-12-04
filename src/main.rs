@@ -47,6 +47,7 @@ mod expr;
 mod bin_op;
 mod parser;
 mod scope;
+mod error;
 
 // enum FunctionIndex {
 //     Name(String)

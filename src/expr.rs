@@ -22,6 +22,28 @@ impl Expr for BinaryExpr {
 }
 
 #[derive(Debug)]
+pub struct CondExpr {
+    inner: Vec<Rc<dyn Expr>>,
+}
+
+impl Expr for CondExpr {
+    fn evaluate(&self) -> Result<Rc<dyn Value>, ()> {
+        self.inner.chunks(2)
+            .take(self.inner.len() / 2)
+            .map(|slice| (&slice[0], &slice[1]))
+            .map(|(cond, expr)| (cond.evaluate(), expr))
+            .find_map(|(cond, expr)| match cond {
+                Ok(cond) => match cond.as_bool() {
+                    Some(cond) => if cond { Some(expr.evaluate()) } else { None },
+                    None => Some(Err(())),
+                },
+                Err(err) => Some(Err(err)),
+            })
+        .unwrap_or(self.inner.last().unwrap().evaluate())
+    }
+}
+
+#[derive(Debug)]
 pub struct LetBinding {
     pub name: String,
     pub scope: Rc<RefCell<Scope>>,
@@ -34,8 +56,8 @@ impl Expr for LetBinding {
         let res = self.scope.borrow_mut().insert_variable(VariableIndex{
             name: self.name.clone(),
         }, self.bind_expr.evaluate()?);
-        let new_scope = Scope::from_parent(self.scope.clone());
-        *self.scope.borrow_mut() = new_scope;
+        // let new_scope = Scope::from_parent(self.scope.clone());
+        // *self.scope.borrow_mut() = new_scope;
         // self.scope.replace(Scope::from_parent(self.scope.clone()));
         match res {
             true => self.in_expr.evaluate(),
@@ -67,5 +89,16 @@ fn test_let_binding() {
         }),
     };
     assert_eq!(bind1.evaluate().unwrap().as_i64().unwrap(), 2)
+}
+
+#[test]
+fn test_conditional_expression() {
+    assert_eq!(CondExpr {
+        inner: vec![
+            Rc::new(false), Rc::new(1),
+            Rc::new(true), Rc::new(2),
+            Rc::new(3),
+        ]
+    }.evaluate().unwrap().as_i64().unwrap(), 2);
 }
 
