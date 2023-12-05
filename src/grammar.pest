@@ -4,7 +4,7 @@ BinExpr = !{ bin_expr_primary ~ (binary_op ~ bin_expr_primary)+ }
 	bin_expr_primary = _{ Invocation | primary }
 
 atomic = _{ "(" ~ expr ~ ")" }
-primary = _{ literal | atomic | CondExpr | Identifier | parameter }
+primary = _{ literal | atomic | CondExpr | Identifier | parameter | LetBind }
 Invocation = { primary{2,} }
 parameter = _{ "$" ~ ParameterIndex }
 ParameterIndex = ${ "0" | '1' .. '9' ~ ASCII_DIGIT* }
@@ -48,7 +48,7 @@ keyword = { "if" | "elif" | "end" | "else" | "fn" | "then" | "let" | "in" }
 
 Identifier = @{ !keyword ~ (ASCII_ALPHA ~ ASCII_ALPHANUMERIC*) }
 
-LetBind = { "let" ~ Identifier ~ "=" ~ expr ~ "in" ~ expr }
+LetBind = { "let" ~ Identifier ~ "=" ~ expr ~ "in" ~ expr ~ "end" }
 
 ws = { WHITESPACE+ }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }

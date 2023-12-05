@@ -135,9 +135,8 @@ impl AstParser {
 pub fn parse() {
     let mut parser = AstParser::new();
     let p = PairParser::parse(Rule::Input, "
-        let a = 1 in
-        let b = a + 1 in
-        if a > b then a elif a <= b then a + b * 3 elif 1 then if 1 then 0 else 0 end else 0 end
+        let a = 1 in a end +
+        let b = 2 in b end
     ").into_iter().next().unwrap().next().unwrap();
     let expr = parser.parse_expr(p);
     println!("{:?}", expr.evaluate());
