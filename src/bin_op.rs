@@ -1,4 +1,4 @@
-use crate::{expr::Expr, Value, Type, error::RuntimeError};
+use crate::{expr::Expr, value::Value, Type, error::RuntimeError};
 
 pub type BinaryOp = fn(&dyn Expr, &dyn Expr) -> Result<Box<dyn Value>, RuntimeError>;
 
@@ -50,6 +50,7 @@ pub fn eq(lhs: &dyn Expr, rhs: &dyn Expr) -> Result<Box<dyn Value>, RuntimeError
             Type::Float64 => Ok(Box::new(value1.as_f64().unwrap() == value2.as_f64().unwrap())),
             Type::Bool => Ok(Box::new(value1.as_bool().unwrap() == value2.as_bool().unwrap())),
             Type::Function(..) => unimplemented!(),
+            _ => Err(RuntimeError::TypeError { current: value1.type_().clone(), expected: vec![] }),
         }
     }
 }
@@ -64,6 +65,7 @@ pub fn ne(lhs: &dyn Expr, rhs: &dyn Expr) -> Result<Box<dyn Value>, RuntimeError
             Type::Float64 => Ok(Box::new(value1.as_f64().unwrap() != value2.as_f64().unwrap())),
             Type::Bool => Ok(Box::new(value1.as_bool().unwrap() != value2.as_bool().unwrap())),
             Type::Function(..) => unimplemented!(),
+            _ => Err(RuntimeError::TypeError { current: value1.type_().clone(), expected: vec![] }),
         }
     }
 }

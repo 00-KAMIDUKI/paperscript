@@ -9,7 +9,7 @@ Invocation = { primary{2,} }
 parameter = _{ "$" ~ ParameterIndex }
 ParameterIndex = ${ "0" | '1' .. '9' ~ ASCII_DIGIT* }
 
-binary_op = _{ Add | Sub | Mul | Div | Mod | Eq | Ne | Gt | Lt | Ge | Le }
+binary_op = _{ Add | Sub | Mul | Div | Mod | Eq | Ne | Ge | Le | Gt | Lt }
 Add = { "+" }
 Sub = { "-" }
 Mul = { "*" }
@@ -17,10 +17,10 @@ Div = { "/" }
 Mod = { "%" }
 Eq = { "==" }
 Ne = { "!=" }
-Gt = { ">" }
-Lt = { "<" }
 Ge = { ">=" }
 Le = { "<=" }
+Gt = { ">" }
+Lt = { "<" }
 
 CondExpr = { if_phrase ~ elif_phrase* ~ else_phrase? ~ "end" }
 	if_phrase = _{ "if" ~ expr ~ "then" ~ expr }
@@ -52,4 +52,3 @@ LetBind = { "let" ~ Identifier ~ "=" ~ expr ~ "in" ~ expr }
 
 ws = { WHITESPACE+ }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
-

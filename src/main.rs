@@ -1,13 +1,19 @@
-#![feature(fn_traits, map_try_insert, trait_upcasting)]
+#![feature(fn_traits, map_try_insert, trait_upcasting, min_specialization)]
 
 use std::fmt::{Debug, Display};
 
-use expr::Expr;
 use scope::Scope;
 
+mod value;
+mod expr;
+mod bin_op;
+mod parser;
+mod scope;
+mod error;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum Type {
+    Undefined,
     Float64,
     Int64,
     // String,
@@ -30,31 +36,6 @@ impl Display for Type {
         }
     }
 }
-
-trait Value: Expr + Display {
-    fn type_(&self) -> &Type;
-    fn as_i64(&self) -> Option<i64>;
-    fn as_f64(&self) -> Option<f64>;
-    fn as_bool(&self) -> Option<bool>;
-    // fn as_string(&self) -> Option<String>;
-}
-
-
-mod value;
-mod expr;
-mod bin_op;
-mod parser;
-mod scope;
-mod error;
-
-// enum FunctionIndex {
-//     Name(String)
-// }
-
-// struct Function {
-//     index: FunctionIndex,
-//     type_: Type,
-// }
 
 fn main() {
     parser::parse();

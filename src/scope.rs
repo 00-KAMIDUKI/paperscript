@@ -1,11 +1,10 @@
 use std::{collections::HashMap, cell::RefCell, rc::Rc};
 
-use crate::{expr::VariableIndex, Value};
+use crate::{expr::VariableIndex, value::Value};
 
 
 #[derive(Debug)]
 pub struct Scope {
-    // functions: HashMap<FunctionIndex>
     variables: HashMap<VariableIndex, Rc<dyn Value>>,
     parent: Option<Rc<RefCell<Scope>>>,
 }

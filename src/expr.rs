@@ -2,7 +2,8 @@ use std::{rc::Rc, cell::RefCell};
 use std::fmt::Debug;
 
 use crate::error::RuntimeError;
-use crate::{Value, Scope, Type};
+use crate::value::{Value, Function};
+use crate::{Scope, Type};
 use crate::bin_op::BinaryOp;
 
 pub trait Expr: Debug {
@@ -11,9 +12,9 @@ pub trait Expr: Debug {
 
 #[derive(Debug)]
 pub struct BinaryExpr {
-    pub lhs: Rc<dyn Expr>,
+    pub lhs: Box<dyn Expr>,
     pub op: BinaryOp,
-    pub rhs: Rc<dyn Expr>,
+    pub rhs: Box<dyn Expr>,
 }
 
 impl Expr for BinaryExpr {
@@ -24,7 +25,7 @@ impl Expr for BinaryExpr {
 
 #[derive(Debug)]
 pub struct CondExpr {
-    pub inner: Vec<Rc<dyn Expr>>,
+    pub inner: Vec<Box<dyn Expr>>,
 }
 
 impl Expr for CondExpr {
@@ -48,15 +49,16 @@ impl Expr for CondExpr {
 pub struct LetBinding {
     pub identifier: String,
     pub scope: Rc<RefCell<Scope>>,
-    pub bind_expr: Rc<dyn Expr>,
-    pub in_expr: Rc<dyn Expr>,
+    pub bind_expr: Box<dyn Expr>,
+    pub in_expr: Box<dyn Expr>,
 }
 
 impl Expr for LetBinding {
     fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
-        let res = self.scope.borrow_mut().insert_variable(VariableIndex{
-            name: self.identifier.clone(),
-        }, self.bind_expr.evaluate()?);
+        let res = self.scope.borrow_mut().insert_variable(
+            VariableIndex::from_name(self.identifier.clone()),
+            self.bind_expr.evaluate()?,
+        );
         match res {
             true => self.in_expr.evaluate(),
             false => Err(RuntimeError::MultiDefined { identifier: self.identifier.clone() }),
@@ -67,6 +69,23 @@ impl Expr for LetBinding {
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
 pub struct VariableIndex {
     pub name: String,
+    // pub param_idx: usize,
+}
+
+impl VariableIndex {
+    pub fn from_name(name: String) -> Self {
+        VariableIndex {
+            name,
+            // param_idx: usize::MAX,
+        }
+    }
+
+    // pub fn from_param_idx(param_idx: usize) -> Self {
+    //     VariableIndex {
+    //         name: String::new(),
+    //         param_idx,
+    //     }
+    // }
 }
 
 #[derive(Debug)]
@@ -82,13 +101,24 @@ impl Expr for Variable {
     }
 }
 
+#[derive(Debug)]
+pub struct Invocation {
+    function: Function,
+    params: Vec<Box<dyn Expr>>,
+}
+
+impl Expr for Invocation {
+    fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
+        self.function.expr.evaluate()
+    }
+}
 
 #[test]
 fn test_binary_expression() {
     assert_eq!(BinaryExpr {
-        lhs: Rc::new(3),
+        lhs: Box::new(3),
         op: crate::bin_op::add,
-        rhs: Rc::new(2),
+        rhs: Box::new(2),
     }.evaluate().unwrap().as_i64().unwrap(), 5);
 }
 
@@ -98,11 +128,11 @@ fn test_let_binding() {
     let bind1 = LetBinding {
         identifier: "a".to_string(),
         scope: scope.clone(),
-        bind_expr: Rc::new(1),
-        in_expr: Rc::new(BinaryExpr {
-            lhs: Rc::new(1),
+        bind_expr: Box::new(1),
+        in_expr: Box::new(BinaryExpr {
+            lhs: Box::new(1),
             op: crate::bin_op::add,
-            rhs: Rc::new(Variable { scope: scope.clone(), index: VariableIndex { name: "a".to_string() } })
+            rhs: Box::new(Variable { scope: scope.clone(), index: VariableIndex::from_name("a".to_string()) })
         }),
     };
     assert_eq!(bind1.evaluate().unwrap().as_i64().unwrap(), 2)
@@ -112,9 +142,9 @@ fn test_let_binding() {
 fn test_conditional_expression() {
     assert_eq!(CondExpr {
         inner: vec![
-            Rc::new(false), Rc::new(1),
-            Rc::new(true), Rc::new(2),
-            Rc::new(3),
+            Box::new(false), Box::new(1),
+            Box::new(true), Box::new(2),
+            Box::new(3),
         ]
     }.evaluate().unwrap().as_i64().unwrap(), 2);
 }
