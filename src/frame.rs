@@ -4,21 +4,21 @@ use crate::{expr::VariableIndex, value::Value};
 
 
 #[derive(Debug)]
-pub struct Scope {
+pub struct Frame {
     variables: HashMap<VariableIndex, Rc<dyn Value>>,
-    parent: Option<Rc<RefCell<Scope>>>,
+    parent: Option<Rc<RefCell<Frame>>>,
 }
 
-impl Scope {
+impl Frame {
     pub fn new() -> Self {
-        Scope {
+        Frame {
             variables: HashMap::new(),
             parent: None,
         }
     }
 
-    pub fn from_parent(parent: Rc<RefCell<Scope>>) -> Self {
-        Scope {
+    pub fn from_parent(parent: Rc<RefCell<Frame>>) -> Self {
+        Frame {
             variables: HashMap::new(),
             parent: Some(parent),
         }
@@ -29,7 +29,7 @@ impl Scope {
     }
 }
 
-impl Scope {
+impl Frame {
     pub fn find(&self, idx: &VariableIndex) -> Option<Rc<dyn Value>> {
         self.variables.get(idx).map_or(
             self.parent.as_ref().map_or(None, |parent| parent.borrow().find(idx)),

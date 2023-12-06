@@ -1,13 +1,16 @@
-use crate::{expr::Expr, value::Value, Type, error::RuntimeError};
+use std::cell::RefCell;
+use std::rc::Rc;
 
-pub type BinaryOp = fn(&dyn Expr, &dyn Expr) -> Result<Box<dyn Value>, RuntimeError>;
+use crate::{expr::Expr, value::Value, Type, error::RuntimeError, frame::Frame};
+
+pub type BinaryOp = fn(&dyn Expr, &dyn Expr, Rc<RefCell<Frame>>) -> Result<Box<dyn Value>, RuntimeError>;
 
 
 macro_rules! define_binary_op {
     ($name: ident $op: tt $($Type: ident $as_type: ident)*) => {
-        pub fn $name(lhs: &dyn Expr, rhs: &dyn Expr) -> Result<Box<dyn Value>, RuntimeError> {
-            let value1 = lhs.evaluate()?;
-            let value2 = rhs.evaluate()?;
+        pub fn $name(lhs: &dyn Expr, rhs: &dyn Expr, frame: Rc<RefCell<Frame>>) -> Result<Box<dyn Value>, RuntimeError> {
+            let value1 = lhs.evaluate(frame.clone())?;
+            let value2 = rhs.evaluate(frame.clone())?;
             if value1.type_() != value2.type_() { Err(RuntimeError::TypeError { current: value2.type_().clone(), expected: vec![value1.type_().clone()] }) } else {
                 match value1.type_() {
                     $(Type::$Type => Ok(Box::new(value1.$as_type().unwrap() $op value2.$as_type().unwrap())),)*
@@ -40,9 +43,9 @@ define_numeric_ops!{
     le <=
 }
 
-pub fn eq(lhs: &dyn Expr, rhs: &dyn Expr) -> Result<Box<dyn Value>, RuntimeError> {
-    let value1 = lhs.evaluate()?;
-    let value2 = rhs.evaluate()?;
+pub fn eq(lhs: &dyn Expr, rhs: &dyn Expr, frame: Rc<RefCell<Frame>>) -> Result<Box<dyn Value>, RuntimeError> {
+    let value1 = lhs.evaluate(frame.clone())?;
+    let value2 = rhs.evaluate(frame.clone())?;
     if value1.type_() != value2.type_() { Err(RuntimeError::TypeError { current: value2.type_().clone(), expected: vec![value1.type_().clone()] }) } 
     else {
         match value1.type_() {
@@ -55,9 +58,9 @@ pub fn eq(lhs: &dyn Expr, rhs: &dyn Expr) -> Result<Box<dyn Value>, RuntimeError
     }
 }
 
-pub fn ne(lhs: &dyn Expr, rhs: &dyn Expr) -> Result<Box<dyn Value>, RuntimeError> {
-    let value1 = lhs.evaluate()?;
-    let value2 = rhs.evaluate()?;
+pub fn ne(lhs: &dyn Expr, rhs: &dyn Expr, frame: Rc<RefCell<Frame>>) -> Result<Box<dyn Value>, RuntimeError> {
+    let value1 = lhs.evaluate(frame.clone())?;
+    let value2 = rhs.evaluate(frame.clone())?;
     if value1.type_() != value2.type_() { Err(RuntimeError::TypeError { current: value2.type_().clone(), expected: vec![value1.type_().clone()] }) } 
     else {
         match value1.type_() {

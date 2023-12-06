@@ -8,8 +8,8 @@ use pest_derive::Parser;
 use pest::Parser;
 use lazy_static::lazy_static;
 
-use crate::scope::Scope;
-use crate::expr::{LetBinding, BinaryExpr, Expr, Variable, VariableIndex, CondExpr};
+use crate::frame::Frame;
+use crate::expr::{LetBinding, BinaryExpr, Expr, Variable, CondExpr};
 use crate::bin_op::{self, BinaryOp};
 
 #[derive(Parser)]
@@ -44,18 +44,18 @@ fn pratt_parser() -> &'static PrattParser<Rule> {
 }
 
 struct ParserContext {
-    scope: Rc<RefCell<Scope>>
+    scope: Rc<RefCell<Frame>>
 }
 
 impl ParserContext {
     fn new() -> Self {
         Self {
-            scope: Rc::new(RefCell::new(Scope::new()))
+            scope: Rc::new(RefCell::new(Frame::new()))
         }
     }
 
     fn make_inner_scope(&mut self) {
-        let new_scope = Scope::from_parent(self.scope.clone());
+        let new_scope = Frame::from_parent(self.scope.clone());
         self.scope = Rc::new(RefCell::new(new_scope));
     }
 }
@@ -79,7 +79,6 @@ impl AstParser {
             identifier: pairs.next().unwrap().as_str().to_string(),
             bind_expr: self.parse_expr(pairs.next().unwrap()),
             in_expr: self.parse_expr(pairs.next().unwrap()),
-            scope: self.context.scope.clone(),
         }
     }
 
@@ -92,7 +91,6 @@ impl AstParser {
             Rule::Integer => Box::new(pair.as_str().parse::<i64>().unwrap()),
             Rule::Identifier => Box::new(Variable {
                 index: pair.as_str().into(),
-                scope: self.context.scope.clone(),
             }),
             Rule::BinExpr | Rule::LetBind | Rule::Invocation => self.parse_expr(pair),
             _ => unimplemented!(),
@@ -133,12 +131,13 @@ impl AstParser {
 }
 
 pub fn parse() {
+    let frame = Rc::new(RefCell::new(Frame::new()));
     let mut parser = AstParser::new();
     let p = PairParser::parse(Rule::Input, "
         let a = 1 in a end +
         let b = 2 in b end
     ").into_iter().next().unwrap().next().unwrap();
     let expr = parser.parse_expr(p);
-    println!("{:?}", expr.evaluate());
+    println!("{:?}", expr.evaluate(frame));
 }
 

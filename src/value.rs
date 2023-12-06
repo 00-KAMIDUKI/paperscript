@@ -4,7 +4,7 @@ use std::{rc::Rc, fmt::Display};
 use crate::Type;
 use crate::error::RuntimeError;
 use crate::expr::Expr;
-use crate::scope::Scope;
+use crate::frame::Frame;
 
 pub trait Value: Expr + Display {
     fn type_(&self) -> Type;
@@ -14,7 +14,7 @@ pub trait Value: Expr + Display {
 }
 
 impl<T: Value + Clone + 'static> Expr for T {
-    fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
+    fn evaluate(&self, frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
         Ok(Rc::new(self.clone()))
     }
 }
@@ -43,7 +43,7 @@ impl Value for bool {
 #[derive(Clone, Debug)]
 pub struct Function {
     type_: Vec<Type>,
-    pub scope: Rc<RefCell<Scope>>,
+    pub scope: Rc<RefCell<Frame>>,
     pub expr: Rc<dyn Expr>,
 }
 

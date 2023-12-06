@@ -2,13 +2,13 @@
 
 use std::fmt::{Debug, Display};
 
-use scope::Scope;
+use frame::Frame;
 
 mod value;
 mod expr;
 mod bin_op;
 mod parser;
-mod scope;
+mod frame;
 mod error;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
