@@ -27,8 +27,8 @@ CondExpr = { if_phrase ~ elif_phrase* ~ else_phrase? ~ "end" }
     elif_phrase = _{ "elif" ~ expr ~ "then" ~ expr }
     else_phrase = _{ "else" ~ expr }
 
-Function = { "fn" ~ (Arguments ~ "->")? ~ expr ~ "end" }
-	Arguments = { Identifier+ }
+Function = { "fn" ~ Arguments ~ expr ~ "end" }
+	Arguments = { (Identifier+ ~ "->")? }
 	
 non_function_literal = _{ Integer | Float }
 

@@ -92,12 +92,11 @@ impl Expr for Variable {
 
 #[derive(Debug)]
 pub struct Invocation {
-    params: Vec<Box<dyn Expr>>,
+    pub params: Vec<Box<dyn Expr>>,
 }
 
 impl Expr for Invocation {
     fn evaluate(&self, frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
-        println!("{:?}", &frame.borrow().variables);
         let function = self.params.first().unwrap().evaluate(frame.clone()).unwrap().as_function().unwrap().clone();
         let mut new_frame = Frame::from_parent(frame.clone());
         for (idx, param) in self.params.iter().enumerate() {

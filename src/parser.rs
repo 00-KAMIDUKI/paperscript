@@ -9,8 +9,9 @@ use pest::Parser;
 use lazy_static::lazy_static;
 
 use crate::frame::Frame;
-use crate::expr::{LetBinding, BinaryExpr, Expr, Variable, CondExpr};
+use crate::expr::{LetBinding, BinaryExpr, Expr, Variable, CondExpr, Invocation, VariableIndex};
 use crate::bin_op::{self, BinaryOp};
+use crate::value::Function;
 
 #[derive(Parser)]
 #[grammar = "./grammar.pest"]
@@ -73,7 +74,7 @@ impl AstParser {
 }
 
 impl AstParser {
-    fn parse_let_bind(&mut self, pairs: &mut Pairs<Rule>) -> LetBinding {
+    fn parse_let_bind(&mut self, mut pairs: Pairs<Rule>) -> LetBinding {
         self.context.make_inner_scope();
         LetBinding {
             identifier: pairs.next().unwrap().as_str().to_string(),
@@ -82,8 +83,19 @@ impl AstParser {
         }
     }
 
-    fn parse_invocation(&mut self, pairs: Pairs<Rule>) -> Box<dyn Expr> {
-        todo!()
+    fn parse_invocation(&mut self, pairs: Pairs<Rule>) -> Invocation {
+        Invocation {
+            params: pairs.map(|pair| self.parse_expr(pair)).collect()
+        }
+    }
+
+    fn parse_function(&mut self, mut pairs: Pairs<Rule>) -> Function {
+        let _arguments = pairs.next().unwrap();
+        let expr = self.parse_expr(pairs.next().unwrap());
+        Function {
+            type_: vec![],
+            expr: expr.into(),
+        }
     }
 
     fn parse_primary(&mut self, pair: Pair<Rule>) -> Box<dyn Expr> {
@@ -92,6 +104,8 @@ impl AstParser {
             Rule::Identifier => Box::new(Variable {
                 index: pair.as_str().into(),
             }),
+            Rule::ParameterIndex => Box::new(Variable { index: VariableIndex::ParamIndex(pair.as_str().parse().unwrap()) }),
+            Rule::Function => Box::new(self.parse_function(pair.into_inner())),
             Rule::BinExpr | Rule::LetBind | Rule::Invocation => self.parse_expr(pair),
             _ => unimplemented!(),
         }
@@ -121,10 +135,10 @@ impl AstParser {
 
     pub fn parse_expr(&mut self, pair: Pair<Rule>) -> Box<dyn Expr> {
         match pair.as_rule() {
-            Rule::LetBind => Box::new(self.parse_let_bind(&mut pair.into_inner())),
+            Rule::LetBind => Box::new(self.parse_let_bind(pair.into_inner())),
             Rule::BinExpr => self.parse_binary_expr(pair),
             Rule::CondExpr => Box::new(self.parse_cond_expr(pair.into_inner())),
-            Rule::Invocation => unimplemented!(),
+            Rule::Invocation => Box::new(self.parse_invocation(pair.into_inner())),
             _ => self.parse_primary(pair),
         }
     }
@@ -134,11 +148,7 @@ pub fn parse() {
     let frame = Rc::new(RefCell::new(Frame::new()));
     let mut parser = AstParser::new();
     let p = PairParser::parse(Rule::Input, "
-        let a = 1 in 
-            let b = a in
-                10 > a
-            end
-        end
+        fn $1 + 1 end 1
     ").into_iter().next().unwrap().next().unwrap();
     let expr = parser.parse_expr(p);
     println!("{:?}", expr.evaluate(frame));
