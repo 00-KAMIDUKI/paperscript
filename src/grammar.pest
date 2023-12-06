@@ -30,7 +30,7 @@ CondExpr = { if_phrase ~ elif_phrase* ~ else_phrase? ~ "end" }
 Function = { "fn" ~ Arguments ~ expr ~ "end" }
 	Arguments = { (Identifier+ ~ "->")? }
 	
-non_function_literal = _{ Integer | Float }
+non_function_literal = _{ Float | Integer }
 
 literal = _{ Function | non_function_literal }
 
@@ -46,7 +46,7 @@ Float = @{ integer_dec ~ "." ~ integer_dec ~ exponent | integer_dec ~ "." ~ inte
 
 keyword = { "if" | "elif" | "end" | "else" | "fn" | "then" | "let" | "in" }
 
-Identifier = @{ !keyword ~ (ASCII_ALPHA ~ ASCII_ALPHANUMERIC*) }
+Identifier = @{ !keyword ~ ((ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_" )*) }
 
 LetBind = { "let" ~ Identifier ~ "=" ~ expr ~ "in" ~ expr ~ "end" }
 
