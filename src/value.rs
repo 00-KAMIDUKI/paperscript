@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::{rc::Rc, fmt::Display};
 
-use crate::Type;
+use crate::type_::Type;
 use crate::error::RuntimeError;
 use crate::expr::Expr;
 use crate::frame::Frame;

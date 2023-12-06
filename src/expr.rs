@@ -2,8 +2,8 @@ use std::{rc::Rc, cell::RefCell};
 use std::fmt::Debug;
 
 use crate::error::RuntimeError;
-use crate::value::{Value, Function};
-use crate::{Frame, Type};
+use crate::value::Value;
+use crate::{Frame, type_::Type};
 use crate::bin_op::BinaryOp;
 
 pub trait Expr: Debug {
@@ -178,6 +178,7 @@ fn test_conditional_expression_lazy_evaluation() {
 #[test]
 fn test_function() {
     use crate::bin_op;
+    use crate::value::Function;
     let frame = Rc::new(RefCell::new(Frame::new()));
     let function = Function {
         type_: vec![],
@@ -197,6 +198,7 @@ fn test_function() {
 fn test_recursion() {
     // fn if $1 > 10 then $1 else $0 ($1 + 1) end end
     use crate::bin_op;
+    use crate::value::Function;
     let frame = Rc::new(RefCell::new(Frame::new()));
     let function = Function {
         type_: vec![],

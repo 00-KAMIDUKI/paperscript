@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::{expr::Expr, value::Value, Type, error::RuntimeError, frame::Frame};
+use crate::{expr::Expr, value::Value, type_::Type, error::RuntimeError, frame::Frame};
 
 pub type BinaryOp = fn(&dyn Expr, &dyn Expr, Rc<RefCell<Frame>>) -> Result<Box<dyn Value>, RuntimeError>;
 

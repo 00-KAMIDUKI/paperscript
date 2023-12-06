@@ -1,4 +1,4 @@
-use crate::{Type, expr::VariableIndex};
+use crate::{type_::Type, expr::VariableIndex};
 
 pub enum Error {
     ParseError(),

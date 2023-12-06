@@ -1,6 +1,4 @@
-use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::rc::Rc;
 
 use pest::pratt_parser::{PrattParser, Assoc, Op};
 use pest::iterators::{Pair, Pairs};
@@ -8,7 +6,6 @@ use pest_derive::Parser;
 use pest::Parser;
 use lazy_static::lazy_static;
 
-use crate::frame::Frame;
 use crate::expr::{LetBinding, BinaryExpr, Expr, Variable, CondExpr, Invocation, VariableIndex};
 use crate::bin_op::{self, BinaryOp};
 use crate::value::Function;
@@ -44,38 +41,16 @@ fn pratt_parser() -> &'static PrattParser<Rule> {
     &*PRATT_PARSER
 }
 
-struct ParserContext {
-    scope: Rc<RefCell<Frame>>
-}
-
-impl ParserContext {
-    fn new() -> Self {
-        Self {
-            scope: Rc::new(RefCell::new(Frame::new()))
-        }
-    }
-
-    fn make_inner_scope(&mut self) {
-        let new_scope = Frame::from_parent(self.scope.clone());
-        self.scope = Rc::new(RefCell::new(new_scope));
-    }
-}
-
-struct AstParser {
-    context: ParserContext,
-}
+struct AstParser {}
 
 impl AstParser {
     fn new() -> Self {
-        Self {
-            context: ParserContext::new()
-        }
+        Self {}
     }
 }
 
 impl AstParser {
     fn parse_let_bind(&mut self, mut pairs: Pairs<Rule>) -> LetBinding {
-        self.context.make_inner_scope();
         LetBinding {
             identifier: pairs.next().unwrap().as_str().to_string(),
             bind_expr: self.parse_expr(pairs.next().unwrap()),
@@ -144,13 +119,9 @@ impl AstParser {
     }
 }
 
-pub fn parse() {
-    let frame = Rc::new(RefCell::new(Frame::new()));
+pub fn parse(input: &str) -> Box<dyn Expr> {
     let mut parser = AstParser::new();
-    let p = PairParser::parse(Rule::Input, "
-        fn $1 + 1 end 1
-    ").into_iter().next().unwrap().next().unwrap();
-    let expr = parser.parse_expr(p);
-    println!("{:?}", expr.evaluate(frame));
+    let pair = PairParser::parse(Rule::Input, input).into_iter().next().unwrap().next().unwrap();
+    parser.parse_expr(pair)
 }
 
