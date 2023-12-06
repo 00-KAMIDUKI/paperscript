@@ -41,7 +41,7 @@ impl Expr for CondExpr {
                 },
                 Err(err) => Some(Err(err)),
             })
-        .unwrap_or(self.inner.last().unwrap().evaluate(frame.clone()))
+        .unwrap_or_else(|| self.inner.last().unwrap().evaluate(frame.clone()))
     }
 }
 
@@ -54,9 +54,10 @@ pub struct LetBinding {
 
 impl Expr for LetBinding {
     fn evaluate(&self, frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
+        let value = self.bind_expr.evaluate(frame.clone())?;
         let res = frame.borrow_mut().insert_variable(
             VariableIndex::Name(self.identifier.clone()),
-            self.bind_expr.evaluate(frame.clone())?,
+            value,
         );
         match res {
             true => self.in_expr.evaluate(frame.clone()),
@@ -91,13 +92,19 @@ impl Expr for Variable {
 
 #[derive(Debug)]
 pub struct Invocation {
-    function: Function,
     params: Vec<Box<dyn Expr>>,
 }
 
 impl Expr for Invocation {
     fn evaluate(&self, frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
-        self.function.expr.evaluate(frame)
+        println!("{:?}", &frame.borrow().variables);
+        let function = self.params.first().unwrap().evaluate(frame.clone()).unwrap().as_function().unwrap().clone();
+        let mut new_frame = Frame::from_parent(frame.clone());
+        for (idx, param) in self.params.iter().enumerate() {
+            let value = param.evaluate(frame.clone())?;
+            new_frame.insert_variable(VariableIndex::ParamIndex(idx), value);
+        }
+        function.expr.evaluate(Rc::new(RefCell::new(new_frame)))
     }
 }
 
@@ -138,3 +145,81 @@ fn test_conditional_expression() {
     }.evaluate(frame).unwrap().as_i64().unwrap(), 2);
 }
 
+#[test]
+fn test_conditional_expression_lazy_evaluation() {
+    #[derive(Debug, Clone, Copy)]
+    struct A {
+        evaluated: *mut bool,
+    }
+
+    impl Expr for A {
+        fn evaluate(&self, frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
+            unsafe {
+                *self.evaluated = true;
+            }
+            Ok(Rc::new(1))
+        }
+    }
+
+    let frame = Rc::new(RefCell::new(Frame::new()));
+    let mut evaluated = false;
+    let flag = A { evaluated: &mut evaluated };
+    let expr = CondExpr {
+        inner: vec![
+            Box::new(true), Box::new(1),
+            Box::new(false), Box::new(flag),
+            Box::new(flag),
+        ]
+    };
+    let res = expr.evaluate(frame);
+    assert_eq!(res.unwrap().as_i64().unwrap(), 1);
+    assert!(!evaluated);
+}
+
+#[test]
+fn test_function() {
+    use crate::bin_op;
+    let frame = Rc::new(RefCell::new(Frame::new()));
+    let function = Function {
+        type_: vec![],
+        expr: Rc::new(BinaryExpr {
+            lhs: Box::new(Variable { index: VariableIndex::ParamIndex(1) }),
+            op: bin_op::add,
+            rhs: Box::new(1),
+        }),
+    };
+    let invocation = Invocation {
+        params: vec![Box::new(function), Box::new(1)],
+    };
+    assert_eq!(invocation.evaluate(frame).unwrap().as_i64().unwrap(), 2);
+}
+
+#[test]
+fn test_recursion() {
+    // fn if $1 > 10 then $1 else $0 ($1 + 1) end end
+    use crate::bin_op;
+    let frame = Rc::new(RefCell::new(Frame::new()));
+    let function = Function {
+        type_: vec![],
+        expr: Rc::new(CondExpr { inner: vec![
+            Box::new(BinaryExpr {
+                lhs: Box::new(Variable { index: VariableIndex::ParamIndex(1) }),
+                op: bin_op::gt,
+                rhs: Box::new(10),
+            }),
+            Box::new(Variable { index: VariableIndex::ParamIndex(1) }),
+            Box::new(Invocation { params: vec![
+                Box::new(Variable { index: VariableIndex::ParamIndex(0) }),
+                Box::new(BinaryExpr {
+                    lhs: Box::new(Variable { index: VariableIndex::ParamIndex(1) }),
+                    op: bin_op::add,
+                    rhs: Box::new(1),
+                }),
+            ] })
+        ] }),
+    };
+    let invocation = Invocation {
+        params: vec![Box::new(function), Box::new(1)],
+    };
+    assert_eq!(invocation.evaluate(frame).unwrap().as_i64().unwrap(), 11);
+}

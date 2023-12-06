@@ -11,6 +11,7 @@ pub trait Value: Expr + Display {
     fn as_i64(&self) -> Option<i64> { None }
     fn as_f64(&self) -> Option<f64> { None }
     fn as_bool(&self) -> Option<bool> { None }
+    fn as_function(&self) -> Option<&Function> { None }
 }
 
 impl<T: Value + Clone + 'static> Expr for T {
@@ -42,13 +43,16 @@ impl Value for bool {
 
 #[derive(Clone, Debug)]
 pub struct Function {
-    type_: Vec<Type>,
-    pub scope: Rc<RefCell<Frame>>,
+    pub type_: Vec<Type>,
     pub expr: Rc<dyn Expr>,
 }
 
 impl Value for Function {
     fn type_(&self) -> Type { Type::Function(self.type_.clone()) }
+
+    fn as_function(&self) -> Option<&Function> {
+        Some(self)
+    }
 }
 
 impl Display for Function {

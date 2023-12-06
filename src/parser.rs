@@ -82,8 +82,8 @@ impl AstParser {
         }
     }
 
-    fn parse_invocation(&mut self, pair: Pairs<Rule>) -> Box<dyn Expr> {
-        unimplemented!()
+    fn parse_invocation(&mut self, pairs: Pairs<Rule>) -> Box<dyn Expr> {
+        todo!()
     }
 
     fn parse_primary(&mut self, pair: Pair<Rule>) -> Box<dyn Expr> {
@@ -134,8 +134,11 @@ pub fn parse() {
     let frame = Rc::new(RefCell::new(Frame::new()));
     let mut parser = AstParser::new();
     let p = PairParser::parse(Rule::Input, "
-        let a = 1 in a end +
-        let b = 2 in b end
+        let a = 1 in 
+            let b = a in
+                10 > a
+            end
+        end
     ").into_iter().next().unwrap().next().unwrap();
     let expr = parser.parse_expr(p);
     println!("{:?}", expr.evaluate(frame));

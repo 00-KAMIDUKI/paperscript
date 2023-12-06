@@ -5,7 +5,7 @@ use crate::{expr::VariableIndex, value::Value};
 
 #[derive(Debug)]
 pub struct Frame {
-    variables: HashMap<VariableIndex, Rc<dyn Value>>,
+    pub variables: HashMap<VariableIndex, Rc<dyn Value>>,
     parent: Option<Rc<RefCell<Frame>>>,
 }
 
