@@ -56,7 +56,7 @@ pub struct LetBinding {
 impl Expr for LetBinding {
     fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
         let res = self.scope.borrow_mut().insert_variable(
-            VariableIndex::from_name(self.identifier.clone()),
+            VariableIndex::Name(self.identifier.clone()),
             self.bind_expr.evaluate()?,
         );
         match res {
@@ -67,25 +67,15 @@ impl Expr for LetBinding {
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
-pub struct VariableIndex {
-    pub name: String,
-    // pub param_idx: usize,
+pub enum VariableIndex {
+    Name(String),
+    ParamIndex(usize),
 }
 
-impl VariableIndex {
-    pub fn from_name(name: String) -> Self {
-        VariableIndex {
-            name,
-            // param_idx: usize::MAX,
-        }
+impl From<&str> for VariableIndex {
+    fn from(value: &str) -> Self {
+        VariableIndex::Name(value.to_string())
     }
-
-    // pub fn from_param_idx(param_idx: usize) -> Self {
-    //     VariableIndex {
-    //         name: String::new(),
-    //         param_idx,
-    //     }
-    // }
 }
 
 #[derive(Debug)]
@@ -132,7 +122,7 @@ fn test_let_binding() {
         in_expr: Box::new(BinaryExpr {
             lhs: Box::new(1),
             op: crate::bin_op::add,
-            rhs: Box::new(Variable { scope: scope.clone(), index: VariableIndex::from_name("a".to_string()) })
+            rhs: Box::new(Variable { scope: scope.clone(), index: "a".into() })
         }),
     };
     assert_eq!(bind1.evaluate().unwrap().as_i64().unwrap(), 2)

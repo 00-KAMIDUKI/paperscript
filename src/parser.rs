@@ -91,7 +91,7 @@ impl AstParser {
         match pair.as_rule() {
             Rule::Integer => Box::new(pair.as_str().parse::<i64>().unwrap()),
             Rule::Identifier => Box::new(Variable {
-                index: VariableIndex::from_name(pair.as_str().to_string()),
+                index: pair.as_str().into(),
                 scope: self.context.scope.clone(),
             }),
             Rule::BinExpr | Rule::LetBind | Rule::Invocation => self.parse_expr(pair),
