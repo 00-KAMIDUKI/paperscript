@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use pest::error::Error;
 use pest::pratt_parser::{PrattParser, Assoc, Op};
 use pest::iterators::{Pair, Pairs};
 use pest_derive::Parser;
@@ -119,9 +120,9 @@ impl AstParser {
     }
 }
 
-pub fn parse(input: &str) -> Box<dyn Expr> {
+pub fn parse(input: &str) -> Result<Box<dyn Expr>, Error<Rule>> {
     let mut parser = AstParser::new();
-    let pair = PairParser::parse(Rule::Input, input).into_iter().next().unwrap().next().unwrap();
-    parser.parse_expr(pair)
+    let pair = PairParser::parse(Rule::Input, input)?.next().unwrap();
+    Ok(parser.parse_expr(pair))
 }
 

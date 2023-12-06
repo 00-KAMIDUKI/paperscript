@@ -1,51 +1,20 @@
-use std::{collections::HashMap, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
-use crate::{expr::VariableIndex, value::Value};
+use crate::{frame::Frame, expr::Expr, value::Value, error::RuntimeError};
 
-#[derive(Debug, Clone)]
 pub struct Runtime {
-    pub frame: Rc<RefCell<Frame>>,
+    frame: Rc<RefCell<Frame>>,
+    main: Box<dyn Expr>,
 }
 
 impl Runtime {
-    pub fn new() -> Self {
+    pub fn new(main: Box<dyn Expr>) -> Self {
         Self {
-            frame: Rc::new(RefCell::new(Frame::new()))
+            frame: Rc::new(RefCell::new(Frame::new())),
+            main,
         }
     }
-}
-
-#[derive(Debug)]
-pub struct Frame {
-    pub variables: HashMap<VariableIndex, Rc<dyn Value>>,
-    parent: Option<Rc<RefCell<Frame>>>,
-}
-
-impl Frame {
-    pub fn new() -> Self {
-        Frame {
-            variables: HashMap::new(),
-            parent: None,
-        }
-    }
-
-    pub fn from_parent(parent: Rc<RefCell<Frame>>) -> Self {
-        Frame {
-            variables: HashMap::new(),
-            parent: Some(parent),
-        }
-    }
-
-    pub fn insert_variable(&mut self, index: VariableIndex, value: Rc<dyn Value>) -> bool {
-        self.variables.try_insert(index, value).is_ok()
-    }
-}
-
-impl Frame {
-    pub fn find(&self, idx: &VariableIndex) -> Option<Rc<dyn Value>> {
-        self.variables.get(idx).map_or(
-            self.parent.as_ref().map_or(None, |parent| parent.borrow().find(idx)),
-            |res| Some(res.clone())
-        )
+    pub fn evaluate(&self) -> Result<Rc<dyn Value>, RuntimeError> {
+        self.main.evaluate(self.frame.clone())
     }
 }

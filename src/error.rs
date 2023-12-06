@@ -1,9 +1,9 @@
 use crate::{type_::Type, expr::VariableIndex};
 
-pub enum Error {
-    ParseError(),
-    RuntimeError(RuntimeError)
-}
+// pub enum Error {
+//     ParseError(),
+//     RuntimeError(RuntimeError)
+// }
 
 #[derive(Debug)]
 pub enum RuntimeError {

@@ -152,7 +152,7 @@ fn test_conditional_expression_lazy_evaluation() {
     }
 
     impl Expr for A {
-        fn evaluate(&self, frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
+        fn evaluate(&self, _frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
             unsafe {
                 *self.evaluated = true;
             }

@@ -15,7 +15,7 @@ pub trait Value: Expr + Display {
 }
 
 impl<T: Value + Clone + 'static> Expr for T {
-    fn evaluate(&self, frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
+    fn evaluate(&self, _frame: Rc<RefCell<Frame>>) -> Result<Rc<dyn Value>, RuntimeError> {
         Ok(Rc::new(self.clone()))
     }
 }
