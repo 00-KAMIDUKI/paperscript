@@ -77,6 +77,7 @@ impl AstParser {
     fn parse_primary(&mut self, pair: Pair<Rule>) -> Box<dyn Expr> {
         match pair.as_rule() {
             Rule::Integer => Box::new(pair.as_str().parse::<i64>().unwrap()),
+            Rule::Float => Box::new(pair.as_str().parse::<f64>().unwrap()),
             Rule::Identifier => Box::new(Variable {
                 index: pair.as_str().into(),
             }),
@@ -90,7 +91,7 @@ impl AstParser {
     fn parse_binary_expr(&mut self, pair: Pair<Rule>) -> Box<dyn Expr> {
         pratt_parser()
             .map_primary(|primary| match primary.as_rule() {
-                Rule::Invocation => unimplemented!(),
+                Rule::Invocation => Box::new(self.parse_invocation(primary.into_inner())),
                 _ => self.parse_primary(primary),
             })
             .map_infix(|lhs, op, rhs| {

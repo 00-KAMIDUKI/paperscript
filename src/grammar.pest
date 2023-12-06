@@ -52,3 +52,4 @@ LetBind = { "let" ~ Identifier ~ "=" ~ expr ~ "in" ~ expr ~ "end" }
 
 ws = { WHITESPACE+ }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }

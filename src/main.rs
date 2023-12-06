@@ -13,9 +13,15 @@ mod runtime;
 
 
 fn main() {
-    let input = std::io::read_to_string(std::io::stdin()).unwrap();
+    let args = std::env::args();
+    let input = if args.len() == 1 {
+        std::io::read_to_string(std::io::stdin()).unwrap()
+    } else {
+        let args: Vec<_> = args.collect();
+        std::fs::read_to_string(args[1].as_str()).unwrap()
+    };
     let expr = parser::parse(&input).unwrap();
     let runtime = runtime::Runtime::new(expr);
-    println!("{:?}", runtime.evaluate());
+    println!("{:?}", runtime.evaluate().unwrap());
 }
 
